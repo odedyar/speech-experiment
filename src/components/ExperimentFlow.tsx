@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { UserInfo, ExperimentState, Recording } from '../types';
 import { trainingTriplets, getRandomTriplets } from '../data/triplets';
 import AudioRecorder from './AudioRecorder';
+import JSZip from 'jszip';
 
 interface ExperimentFlowProps {
   userInfo: UserInfo;
@@ -150,13 +151,51 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
+  const downloadAllAsZip = async () => {
+    const zip = new JSZip();
+    
+    // הוספת כל ההקלטות לקובץ ZIP
+    for (const recording of state.recordings) {
+      zip.file(recording.filename, recording.blob);
+    }
+    
+    // יצירת קובץ מידע על המשתמש
+    const userInfoText = `פרטי משתתף:
+שם: ${userInfo.name}
+מזהה: ${userId}
+גיל: ${userInfo.age}
+מין: ${userInfo.gender || 'לא צוין'}
+תאריך הניסוי: ${new Date().toLocaleDateString('he-IL')}
+שעת הניסוי: ${new Date().toLocaleTimeString('he-IL')}
+כמות הקלטות: ${state.recordings.length}`;
+    
+    zip.file('user_info.txt', userInfoText);
+    
+    // יצירת קובץ ZIP והורדה
+    const content = await zip.generateAsync({type: 'blob'});
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${userInfo.name}_${userId}_experiment.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (state.phase === 'complete') {
     return (
       <div className="experiment-complete">
         <h2>תודה רבה!</h2>
         <p>הניסוי הסתיים בהצלחה</p>
         <div className="recordings-list">
-          <h3>הקלטות להורדה:</h3>
+          <div className="download-actions">
+            <button 
+              onClick={downloadAllAsZip}
+              className="download-all-button"
+            >
+              📦 הורד הכל כקובץ ZIP
+            </button>
+          </div>
+          <h3>הקלטות פרטניות:</h3>
           {state.recordings.map((recording, index) => (
             <div key={recording.id} className="recording-item">
               <span>{recording.filename}</span>
