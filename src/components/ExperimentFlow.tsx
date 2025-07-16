@@ -79,6 +79,8 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       // מעבר לשלב הבא
       switch (state.phase) {
         case 'speech-training':
+          // הצגת הודעת מעבר
+          alert('כל הכבוד! סיימת את שלב האימון לדיבור.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד שלשות לחזרה בדיבור.');
           setState(prev => ({
             ...prev,
             phase: 'speech-experiment',
@@ -87,6 +89,8 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           }));
           break;
         case 'speech-experiment':
+          // הודעת מעבר לזמזום
+          alert('מצוין! סיימת את שלב הדיבור.\nעכשיו נעבור לחלק הזמזום. במקום לומר את השלשות במילים, תצטרך לזמזם אותן.\nנתחיל באימון קצר.');
           setState(prev => ({
             ...prev,
             phase: 'hum-training',
@@ -95,6 +99,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           }));
           break;
         case 'hum-training':
+          alert('נהדר! סיימת את שלב האימון לזמזום.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד שלשות לזמזום.');
           setState(prev => ({
             ...prev,
             phase: 'hum-experiment',
@@ -136,16 +141,55 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
+  const getStepByStepInstructions = () => {
+    switch (state.phase) {
+      case 'speech-training':
+        return [
+          '1. לחץ על הכפתור "השמע שלשה" כדי לשמוע את השלשה',
+          '2. שים לב לסדר הצלילים והפסקות ביניהם',
+          '3. לחץ על "התחל הקלטה" כשאתה מוכן',
+          '4. חזור על השלשה בדיבור ברור ורם',
+          '5. לחץ על "עצור הקלטה" כשסיימת'
+        ];
+      case 'speech-experiment':
+        return [
+          '1. לחץ על הכפתור "השמע שלשה"',
+          '2. האזן בקשב רב - זהו הניסוי האמיתי!',
+          '3. לחץ על "התחל הקלטה"',
+          '4. חזור על השלשה בדיבור ברור בדיוק כפי ששמעת',
+          '5. לחץ על "עצור הקלטה" כשסיימת'
+        ];
+      case 'hum-training':
+        return [
+          '1. לחץ על הכפתור "השמע שלשה"',
+          '2. שים לב לקצב והמנגינה של השלשה',
+          '3. לחץ על "התחל הקלטה"',
+          '4. זמזם את השלשה (לא לומר במילים!)',
+          '5. לחץ על "עצור הקלטה" כשסיימת'
+        ];
+      case 'hum-experiment':
+        return [
+          '1. לחץ על הכפתור "השמע שלשה"',
+          '2. האזן בקשב רב לקצב והמנגינה',
+          '3. לחץ על "התחל הקלטה"',
+          '4. זמזם את השלשה בדיוק כפי ששמעת',
+          '5. לחץ על "עצור הקלטה" כשסיימת'
+        ];
+      default:
+        return [];
+    }
+  };
+
   const getInstructions = () => {
     switch (state.phase) {
       case 'speech-training':
-        return 'האזן לשלשה ולאחר מכן חזור עליה בדיבור';
+        return 'שלב אימון - דיבור: זהו שלב אימון לפני הניסוי האמיתי. תרגל את החזרה על השלשות בדיבור ברור.';
       case 'speech-experiment':
-        return 'האזן לשלשה ולאחר מכן חזור עליה בדיבור';
+        return 'שלב ניסוי - דיבור: זהו הניסוי האמיתי! האזן לשלשה ולאחר מכן חזור עליה בדיבור ברור ורם.';
       case 'hum-training':
-        return 'האזן לשלשה ולאחר מכן זמזם אותה';
+        return 'שלב אימון - זמזום: עכשיו נעבור לזמזום. זהו שלב אימון לפני הניסוי האמיתי.';
       case 'hum-experiment':
-        return 'האזן לשלשה ולאחר מכן זמזם אותה';
+        return 'שלב ניסוי - זמזום: זהו הניסוי האמיתי! האזן לשלשה ולאחר מכן זמזם אותה בלי לומר במילים.';
       default:
         return '';
     }
@@ -230,6 +274,15 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       
       <div className="instructions">
         <p>{getInstructions()}</p>
+      </div>
+      
+      <div className="step-instructions">
+        <h4>הוראות שלב אחר שלב:</h4>
+        <ol>
+          {getStepByStepInstructions().map((step, index) => (
+            <li key={index}>{step}</li>
+          ))}
+        </ol>
       </div>
       
       <div className="triplet-display">
