@@ -2,7 +2,7 @@
   "name": "speech-experiment",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://YOUR-USERNAME.github.io/speech-experiment",
+  "homepage": "https://odedyar.github.io/speech-experiment",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
