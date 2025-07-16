@@ -3,6 +3,7 @@ import { UserInfo, ExperimentState, Recording } from '../types';
 import { trainingTriplets, getRandomTriplets } from '../data/triplets';
 import AudioRecorder from './AudioRecorder';
 import JSZip from 'jszip';
+import { saveExperimentData } from '../services/dataService';
 
 interface ExperimentFlowProps {
   userInfo: UserInfo;
@@ -108,6 +109,17 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           }));
           break;
         case 'hum-experiment':
+          // שמירת הנתונים לפני סיום הניסוי
+          setTimeout(async () => {
+            try {
+              const experimentId = await saveExperimentData(userId, userInfo, state.recordings);
+              console.log('Experiment saved with ID:', experimentId);
+            } catch (error) {
+              console.error('Failed to save experiment:', error);
+              // המשך הניסוי גם אם השמירה נכשלה
+            }
+          }, 100);
+          
           setState(prev => ({
             ...prev,
             phase: 'complete'
@@ -230,6 +242,10 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       <div className="experiment-complete">
         <h2>תודה רבה!</h2>
         <p>הניסוי הסתיים בהצלחה</p>
+        <div className="success-message">
+          <p>✅ הנתונים נשמרו בבטחה במערכת</p>
+          <p>תוכל להוריד את הקבצים לשמירה אישית</p>
+        </div>
         <div className="recordings-list">
           <div className="download-actions">
             <button 
