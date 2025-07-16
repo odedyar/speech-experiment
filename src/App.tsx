@@ -1,24 +1,30 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
+import UserInfoForm from './components/UserInfoForm';
+import ExperimentFlow from './components/ExperimentFlow';
+import { UserInfo } from './types';
 
 function App() {
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [userId, setUserId] = useState<string>('');
+
+  const handleUserInfoSubmit = (info: UserInfo) => {
+    // יצירת מזהה אוטומטי
+    const newUserId = `u${String(Date.now()).slice(-3).padStart(3, '0')}`;
+    setUserId(newUserId);
+    setUserInfo(info);
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div className="container">
+        <h1>ניסוי דיבור וזמזום</h1>
+        {!userInfo ? (
+          <UserInfoForm onSubmit={handleUserInfoSubmit} />
+        ) : (
+          <ExperimentFlow userInfo={userInfo} userId={userId} />
+        )}
+      </div>
     </div>
   );
 }
