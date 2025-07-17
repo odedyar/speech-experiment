@@ -1,12 +1,24 @@
-// השלשות לניסוי - 6 שלשות בסך הכל
+// צירופי צלילים לניסוי - 6 צירופים שונים
+// "L" = צליל ארוך (פים), "S" = צליל קצר (פיפ)
 export const triplets = [
-  'akk', 'kka', 'aka', 'kok', 'oko', 'koo'
+  'LLS', 'SLS', 'LSL', 'LSS', 'SLL', 'SSL'
 ];
 
-// השלשות לאימון - 3 שלשות נבחרות מראש
+// צירופים לאימון - 3 צירופים פשוטים יותר
 export const trainingTriplets = [
-  'akk', 'kka', 'aka'
+  'LLS', 'SLS', 'LSL'
 ];
+
+// מיפוי לתיאור בעברית
+export const soundDescriptions: { [key: string]: string } = {
+  'L': 'פים ארוך',
+  'S': 'פיפ קצר'
+};
+
+// המרת צירוף לתיאור
+export const getTripletDescription = (triplet: string): string => {
+  return triplet.split('').map(sound => soundDescriptions[sound]).join(', ');
+};
 
 // פונקציה לבחירת שלשות אקראיות
 export const getRandomTriplets = (count: number): string[] => {

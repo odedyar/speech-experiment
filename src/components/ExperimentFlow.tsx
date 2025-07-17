@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserInfo, ExperimentState, Recording } from '../types';
-import { trainingTriplets, getRandomTriplets } from '../data/triplets';
+import { trainingTriplets, getRandomTriplets, getTripletDescription } from '../data/triplets';
+import { playTripletSequence } from '../data/audioSystem';
 import AudioRecorder from './AudioRecorder';
 import JSZip from 'jszip';
 import { saveExperimentData } from '../services/dataService';
@@ -30,24 +31,30 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     setIsPlaying(true);
     setShowRecordButton(false);
 
-    // הקריאה של השלשה עם הפסקות 300ms
-    for (let i = 0; i < currentTriplet.length; i++) {
-      const letter = currentTriplet[i];
-      await speakLetter(letter);
-      if (i < currentTriplet.length - 1) {
-        await delay(300);
-      }
+    try {
+      console.log('Trying to play triplet:', currentTriplet);
+      // השמעת צירוף הצלילים מקבצי האודיו
+      await playTripletSequence(currentTriplet);
+      console.log('Successfully played audio files');
+    } catch (error) {
+      console.error('Error playing triplet:', error);
+      console.log('Falling back to speech synthesis');
+      // במקרה של שגיאה, ננסה עם text-to-speech כגיבוי
+      await playTripletFallback();
     }
 
     setIsPlaying(false);
     setShowRecordButton(true);
   };
 
-  const speakLetter = (letter: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const utterance = new SpeechSynthesisUtterance(letter);
-      utterance.lang = 'he-IL';
-      utterance.rate = 0.8;
+  // פונקציית גיבוי עם text-to-speech
+  const playTripletFallback = async () => {
+    const description = getTripletDescription(currentTriplet);
+    const utterance = new SpeechSynthesisUtterance(description);
+    utterance.lang = 'he-IL';
+    utterance.rate = 0.8;
+    
+    return new Promise<void>((resolve) => {
       utterance.onend = () => resolve();
       speechSynthesis.speak(utterance);
     });
@@ -81,7 +88,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       switch (state.phase) {
         case 'speech-training':
           // הצגת הודעת מעבר
-          alert('כל הכבוד! סיימת את שלב האימון לדיבור.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד שלשות לחזרה בדיבור.');
+          alert('כל הכבוד! סיימת את שלב האימון לזיהוי בדיבור.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד צירופי צלילים לזיהוי.');
           setState(prev => ({
             ...prev,
             phase: 'speech-experiment',
@@ -91,7 +98,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           break;
         case 'speech-experiment':
           // הודעת מעבר לזמזום
-          alert('מצוין! סיימת את שלב הדיבור.\nעכשיו נעבור לחלק הזמזום. במקום לומר את השלשות במילים, תצטרך לזמזם אותן.\nנתחיל באימון קצר.');
+          alert('מצוין! סיימת את שלב הזיהוי בדיבור.\nעכשיו נעבור לחלק הזמזום. במקום לומר "ארוך" ו"קצר", תצטרך לזמזם את הצלילים באורך המתאים.\nנתחיל באימון קצר.');
           setState(prev => ({
             ...prev,
             phase: 'hum-training',
@@ -100,7 +107,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           }));
           break;
         case 'hum-training':
-          alert('נהדר! סיימת את שלב האימון לזמזום.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד שלשות לזמזום.');
+          alert('נהדר! סיימת את שלב האימון לזמזום.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד צירופי צלילים לזמזום.');
           setState(prev => ({
             ...prev,
             phase: 'hum-experiment',
@@ -139,9 +146,9 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
   const getPhaseTitle = () => {
     switch (state.phase) {
       case 'speech-training':
-        return 'שלב אימון - דיבור';
+        return 'שלב אימון - זיהוי בדיבור';
       case 'speech-experiment':
-        return 'שלב ניסוי - דיבור';
+        return 'שלב ניסוי - זיהוי בדיבור';
       case 'hum-training':
         return 'שלב אימון - זמזום';
       case 'hum-experiment':
@@ -157,35 +164,39 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     switch (state.phase) {
       case 'speech-training':
         return [
-          '1. לחץ על הכפתור "השמע שלשה" כדי לשמוע את השלשה',
-          '2. שים לב לסדר הצלילים והפסקות ביניהם',
+          '1. לחץ על הכפתור "השמע צירוף צלילים" כדי לשמוע את הצלילים',
+          '2. שים לב לסדר הצלילים: פים ארוך או פיפ קצר',
           '3. לחץ על "התחל הקלטה" כשאתה מוכן',
-          '4. חזור על השלשה בדיבור ברור ורם',
-          '5. לחץ על "עצור הקלטה" כשסיימת'
+          '4. אמור ברצף: "ארוך" עבור כל פים ארוך ו"קצר" עבור כל פיפ קצר',
+          '5. דוגמה: אם שמעת ארוך-קצר-קצר, אמור "ארוך קצר קצר"',
+          '6. לחץ על "עצור הקלטה" כשסיימת'
         ];
       case 'speech-experiment':
         return [
-          '1. לחץ על הכפתור "השמע שלשה"',
+          '1. לחץ על הכפתור "השמע צירוף צלילים"',
           '2. האזן בקשב רב - זהו הניסוי האמיתי!',
           '3. לחץ על "התחל הקלטה"',
-          '4. חזור על השלשה בדיבור ברור בדיוק כפי ששמעת',
-          '5. לחץ על "עצור הקלטה" כשסיימת'
+          '4. אמור ברצף את המילים "ארוך" או "קצר" בהתאם לסדר שמעת',
+          '5. לדוגמה: "ארוך קצר ארוך" או "קצר קצר ארוך"',
+          '6. לחץ על "עצור הקלטה" כשסיימת'
         ];
       case 'hum-training':
         return [
-          '1. לחץ על הכפתור "השמע שלשה"',
-          '2. שים לב לקצב והמנגינה של השלשה',
+          '1. לחץ על הכפתור "השמע צירוף צלילים"',
+          '2. שים לב לאורך כל צליל',
           '3. לחץ על "התחל הקלטה"',
-          '4. זמזם את השלשה (לא לומר במילים!)',
-          '5. לחץ על "עצור הקלטה" כשסיימת'
+          '4. זמזם את הצלילים באורך המתאים בלי מילים - רק זמזום!',
+          '5. שמור על אותו סדר ואורך שמעת',
+          '6. לחץ על "עצור הקלטה" כשסיימת'
         ];
       case 'hum-experiment':
         return [
-          '1. לחץ על הכפתור "השמע שלשה"',
-          '2. האזן בקשב רב לקצב והמנגינה',
+          '1. לחץ על הכפתור "השמע צירוף צלילים"',
+          '2. האזן בקשב רב לאורך כל צליל',
           '3. לחץ על "התחל הקלטה"',
-          '4. זמזם את השלשה בדיוק כפי ששמעת',
-          '5. לחץ על "עצור הקלטה" כשסיימת'
+          '4. זמזם את הצלילים באורך המדויק שמעת',
+          '5. אין לומר מילים - רק לזמזם!',
+          '6. לחץ על "עצור הקלטה" כשסיימת'
         ];
       default:
         return [];
@@ -195,13 +206,13 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
   const getInstructions = () => {
     switch (state.phase) {
       case 'speech-training':
-        return 'שלב אימון - דיבור: זהו שלב אימון לפני הניסוי האמיתי. תרגל את החזרה על השלשות בדיבור ברור.';
+        return 'שלב אימון - זיהוי בדיבור: זהו שלב אימון לפני הניסוי האמיתי. האזן לצירוף הצלילים ואמור ברצף "ארוך" ו"קצר" לפי הסדר.';
       case 'speech-experiment':
-        return 'שלב ניסוי - דיבור: זהו הניסוי האמיתי! האזן לשלשה ולאחר מכן חזור עליה בדיבור ברור ורם.';
+        return 'שלב ניסוי - זיהוי בדיבור: זהו הניסוי האמיתי! האזן לצירוף הצלילים ואמור ברצף "ארוך" או "קצר" בהתאם לסדר שמעת.';
       case 'hum-training':
-        return 'שלב אימון - זמזום: עכשיו נעבור לזמזום. זהו שלב אימון לפני הניסוי האמיתי.';
+        return 'שלב אימון - זמזום: עכשיו נעבור לזמזום. זהו שלב אימון לפני הניסוי האמיתי. זמזם את הצלילים באורך המתאים בלי מילים.';
       case 'hum-experiment':
-        return 'שלב ניסוי - זמזום: זהו הניסוי האמיתי! האזן לשלשה ולאחר מכן זמזם אותה בלי לומר במילים.';
+        return 'שלב ניסוי - זמזום: זהו הניסוי האמיתי! האזן לצירוף הצלילים וזמזם אותם באורך המדויק בלי מילים.';
       default:
         return '';
     }
@@ -301,10 +312,14 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
         </ol>
       </div>
       
-      <div className="triplet-display">
-        <h3>השלשה הנוכחית:</h3>
+      {/* Hiding triplet display as requested by user */}
+      {/* <div className="triplet-display">
+        <h3>צירוף הצלילים הנוכחי:</h3>
         <div className="triplet-text">{currentTriplet}</div>
-      </div>
+        <div className="triplet-description">
+          ({getTripletDescription(currentTriplet)})
+        </div>
+      </div> */}
       
       <div className="audio-controls">
         <button 
@@ -312,7 +327,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           disabled={isPlaying}
           className="play-button"
         >
-          {isPlaying ? 'מנגן...' : 'השמע שלשה'}
+          {isPlaying ? 'מנגן...' : 'השמע צירוף צלילים'}
         </button>
         
         {showRecordButton && (

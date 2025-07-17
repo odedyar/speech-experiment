@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="App">
       <div className="container">
-        <h1>ניסוי דיבור וזמזום</h1>
+        <h1>ניסוי זיהוי וזמזום צלילים</h1>
         {!userInfo ? (
           <UserInfoForm onSubmit={handleUserInfoSubmit} />
         ) : (

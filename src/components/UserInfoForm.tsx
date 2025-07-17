@@ -15,6 +15,7 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onSubmit }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.age) {
+      console.log('Submitting user info:', formData); // לוג לבדיקה
       onSubmit(formData);
     }
   };
@@ -66,8 +67,8 @@ const UserInfoForm: React.FC<UserInfoFormProps> = ({ onSubmit }) => {
             onChange={handleChange}
           >
             <option value="">בחר</option>
-            <option value="male">זכר</option>
-            <option value="female">נקבה</option>
+            <option value="male">גבר</option>
+            <option value="female">אישה</option>
             <option value="other">אחר</option>
           </select>
         </div>
