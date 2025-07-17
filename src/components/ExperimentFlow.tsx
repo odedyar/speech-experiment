@@ -93,7 +93,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
             ...prev,
             phase: 'speech-experiment',
             currentIndex: 0,
-            triplets: getRandomTriplets(6).slice(0, 6) // נלקח 6 במקום 25 לדמו
+            triplets: getRandomTriplets(25) // 25 צעדים לניסוי
           }));
           break;
         case 'speech-experiment':
@@ -112,7 +112,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
             ...prev,
             phase: 'hum-experiment',
             currentIndex: 0,
-            triplets: getRandomTriplets(6).slice(0, 6) // נלקח 6 במקום 25 לדמו
+            triplets: getRandomTriplets(25) // 25 צעדים לניסוי
           }));
           break;
         case 'hum-experiment':

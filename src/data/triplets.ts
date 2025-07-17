@@ -1,7 +1,8 @@
-// צירופי צלילים לניסוי - 6 צירופים שונים
+// צירופי צלילים לניסוי - כל הצירופים האפשריים
 // "L" = צליל ארוך (פים), "S" = צליל קצר (פיפ)
 export const triplets = [
-  'LLS', 'SLS', 'LSL', 'LSS', 'SLL', 'SSL'
+  'LLL', 'LLS', 'LSL', 'LSS', 
+  'SLL', 'SLS', 'SSL', 'SSS'
 ];
 
 // צירופים לאימון - 3 צירופים פשוטים יותר
@@ -20,8 +21,12 @@ export const getTripletDescription = (triplet: string): string => {
   return triplet.split('').map(sound => soundDescriptions[sound]).join(', ');
 };
 
-// פונקציה לבחירת שלשות אקראיות
+// פונקציה לבחירת שלשות אקראיות (עם חזרות אם צריך)
 export const getRandomTriplets = (count: number): string[] => {
-  const shuffled = [...triplets].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
+  const result: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const randomIndex = Math.floor(Math.random() * triplets.length);
+    result.push(triplets[randomIndex]);
+  }
+  return result;
 };
