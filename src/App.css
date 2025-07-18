@@ -378,6 +378,110 @@ h3 {
   transform: translateY(-1px);
 }
 
+/* סגנונות לבדיקת הרשאות מיקרופון */
+.permission-card {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 15px;
+  padding: 30px;
+  max-width: 600px;
+  margin: 40px auto;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.permission-card h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.permission-button {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 20px 0;
+}
+
+.permission-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+}
+
+.note {
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+.alert {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+.alert h4 {
+  color: #856404;
+  margin-bottom: 15px;
+}
+
+.alert p {
+  color: #856404;
+  margin-bottom: 10px;
+}
+
+.alert ul {
+  color: #856404;
+  margin: 10px 0;
+}
+
+.alert li {
+  margin-bottom: 5px;
+}
+
+.retry-button {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
 /* רספונסיבי */
 @media (max-width: 768px) {
   .container {
@@ -397,4 +501,107 @@ h3 {
     flex-direction: column;
     gap: 15px;
   }
+  
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .instructions-toggle {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .browser-instruction ol,
+  .browser-instruction ul {
+    padding-right: 15px;
+  }
+}
+
+/* סגנונות נוספות */
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+
+.instructions-toggle {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+
+.instructions-toggle:hover {
+  background: #0056b3;
+}
+
+.detailed-instructions {
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: right;
+}
+
+.detailed-instructions h4 {
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.browser-instruction {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-right: 4px solid #007bff;
+}
+
+.browser-instruction h5 {
+  color: #495057;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+
+.browser-instruction ol,
+.browser-instruction ul {
+  margin: 0;
+  padding-right: 20px;
+}
+
+.browser-instruction li {
+  margin-bottom: 5px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.general-tips {
+  background: #e7f3ff;
+  padding: 15px;
+  border-radius: 8px;
+  border-right: 4px solid #17a2b8;
+}
+
+.general-tips h5 {
+  color: #0c5460;
+  margin-bottom: 10px;
+}
+
+.general-tips ul {
+  margin: 0;
+  padding-right: 20px;
+}
+
+.general-tips li {
+  margin-bottom: 5px;
+  color: #0c5460;
 }
