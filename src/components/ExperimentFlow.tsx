@@ -271,7 +271,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
-  // עדכון הפונקציה uploadToGoogleDrive
+  // החלפת הפונקציה uploadToGoogleDrive
   const uploadToGoogleDrive = async (zipBlob: Blob, fileName: string) => {
     try {
       console.log('מתחיל העלאה לגוגל דרייב...');
@@ -283,45 +283,28 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
         return { success: true, response: 'Simulated upload success (localhost mode)' };
       }
       
-      // נסיון ראשון - FormData
-      try {
-        console.log('נסיון 1: FormData');
-        const formData = new FormData();
-        formData.append('file', zipBlob, fileName);
-        formData.append('filename', fileName);
-        
-        const res = await fetch(`https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`, {
-          method: "POST",
-          body: formData
-        });
-
-        if (res.ok) {
-          const text = await res.text();
-          console.log("תשובת השרת (FormData):", text);
-          
-          try {
-            const result = JSON.parse(text);
-            if (result.success) {
-              return { success: true, response: result.message || text };
-            }
-          } catch {
-            if (text.includes('success')) {
-              return { success: true, response: text };
-            }
-          }
-        }
-      } catch (error) {
-        console.log('FormData failed, trying raw blob');
-      }
+      // המרה לbase64 - זה עוקף את בעיית CORS
+      const base64Data = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // הסרת הprefix
+        };
+        reader.readAsDataURL(zipBlob);
+      });
       
-      // נסיון שני - Raw Blob
-      console.log('נסיון 2: Raw Blob');
-      const res = await fetch(`https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`, {
+      console.log('Base64 data length:', base64Data.length);
+      
+      // יצירת form data עם base64
+      const formData = new FormData();
+      formData.append('fileData', base64Data);
+      formData.append('fileName', fileName);
+      formData.append('mimeType', 'application/zip');
+      
+      // שליחה לGoogle Apps Script
+      const res = await fetch("https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec", {
         method: "POST",
-        body: zipBlob,
-        headers: {
-          "Content-Type": "application/zip"
-        }
+        body: formData
       });
 
       if (!res.ok) {
@@ -329,7 +312,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       }
 
       const text = await res.text();
-      console.log("תשובת השרת (Raw Blob):", text);
+      console.log("תשובת השרת:", text);
       
       // נסיון לפרסר JSON
       try {
