@@ -283,10 +283,40 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
         return { success: true, response: 'Simulated upload success (localhost mode)' };
       }
       
-      // שליחה ישירה של הblob עם query parameter
-      const url = `https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`;
+      // נסיון ראשון - FormData
+      try {
+        console.log('נסיון 1: FormData');
+        const formData = new FormData();
+        formData.append('file', zipBlob, fileName);
+        formData.append('filename', fileName);
+        
+        const res = await fetch(`https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (res.ok) {
+          const text = await res.text();
+          console.log("תשובת השרת (FormData):", text);
+          
+          try {
+            const result = JSON.parse(text);
+            if (result.success) {
+              return { success: true, response: result.message || text };
+            }
+          } catch {
+            if (text.includes('success')) {
+              return { success: true, response: text };
+            }
+          }
+        }
+      } catch (error) {
+        console.log('FormData failed, trying raw blob');
+      }
       
-      const res = await fetch(url, {
+      // נסיון שני - Raw Blob
+      console.log('נסיון 2: Raw Blob');
+      const res = await fetch(`https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`, {
         method: "POST",
         body: zipBlob,
         headers: {
@@ -299,7 +329,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       }
 
       const text = await res.text();
-      console.log("תשובת השרת:", text);
+      console.log("תשובת השרת (Raw Blob):", text);
       
       // נסיון לפרסר JSON
       try {
