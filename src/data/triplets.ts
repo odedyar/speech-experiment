@@ -1,5 +1,5 @@
 // צירופי צלילים לניסוי - כל הצירופים האפשריים
-// "L" = צליל ארוך (פים), "S" = צליל קצר (פיפ)
+// "L" = צליל ארוך (פיפ), "S" = צליל קצר (פיפ)
 export const triplets = [
   'LLL', 'LLS', 'LSL', 'LSS', 
   'SLL', 'SLS', 'SSL', 'SSS'
@@ -12,7 +12,7 @@ export const trainingTriplets = [
 
 // מיפוי לתיאור בעברית
 export const soundDescriptions: { [key: string]: string } = {
-  'L': 'פים ארוך',
+  'L': 'פיפ ארוך',
   'S': 'פיפ קצר'
 };
 

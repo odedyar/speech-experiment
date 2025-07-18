@@ -351,6 +351,17 @@ h3 {
   box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
 }
 
+.download-all-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.download-all-button:disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
 .recording-item {
   display: flex;
   justify-content: space-between;
@@ -378,108 +389,113 @@ h3 {
   transform: translateY(-1px);
 }
 
-/* סגנונות לבדיקת הרשאות מיקרופון */
-.permission-card {
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  border-radius: 15px;
-  padding: 30px;
-  max-width: 600px;
-  margin: 40px auto;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
+/* הוספה ל-App.css */
 
-.permission-card h3 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 1.5rem;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.permission-button {
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
-  border: none;
-  padding: 15px 30px;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin: 20px 0;
-}
-
-.permission-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-}
-
-.note {
-  font-size: 0.9rem;
-  color: #666;
-  font-style: italic;
-  margin-top: 10px;
-}
-
-.alert {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
+.test-section {
+  background: #f0f8ff;
+  border: 2px solid #4169e1;
+  border-radius: 10px;
   padding: 20px;
   margin-bottom: 20px;
-  text-align: right;
+  text-align: center;
 }
 
-.alert h4 {
-  color: #856404;
-  margin-bottom: 15px;
-}
-
-.alert p {
-  color: #856404;
+.test-section h4 {
+  color: #4169e1;
   margin-bottom: 10px;
 }
 
-.alert ul {
-  color: #856404;
+.test-button {
+  background: linear-gradient(135deg, #4169e1, #6495ed);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
   margin: 10px 0;
 }
 
-.alert li {
-  margin-bottom: 5px;
-}
-
-.retry-button {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-  color: white;
-  border: none;
-  padding: 12px 25px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: 10px;
-}
-
-.retry-button:hover {
+.test-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+  box-shadow: 0 5px 15px rgba(65, 105, 225, 0.3);
+}
+
+.test-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.test-status {
+  margin: 15px 0;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.test-status.testing {
+  background: #e3f2fd;
+  border: 2px solid #2196f3;
+  color: #1976d2;
+}
+
+.test-status.success {
+  background: #e8f5e8;
+  border: 2px solid #4caf50;
+  color: #2e7d32;
+}
+
+.test-status.error {
+  background: #ffebee;
+  border: 2px solid #f44336;
+  color: #c62828;
+}
+
+.test-status p {
+  margin: 5px 0;
+  font-weight: 600;
+}
+
+.upload-status {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.upload-status.uploading {
+  background: #e3f2fd;
+  border: 2px solid #2196f3;
+  color: #1976d2;
+}
+
+.upload-status.success {
+  background: #e8f5e8;
+  border: 2px solid #4caf50;
+  color: #2e7d32;
+}
+
+.upload-status.error {
+  background: #ffebee;
+  border: 2px solid #f44336;
+  color: #c62828;
+}
+
+.upload-status p {
+  margin: 5px 0;
+  font-weight: 600;
+}
+
+.download-all-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.download-all-button:disabled:hover {
+  transform: none;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
 }
 
 /* רספונסיבי */

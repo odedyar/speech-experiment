@@ -12,7 +12,7 @@ export const audioSounds: AudioSound[] = [
     id: 'long',
     type: 'L',
     audioFile: `${process.env.PUBLIC_URL}/audio/pim-long.mp3`, // קובץ הפים הארוך
-    description: 'פים ארוך'
+    description: 'פיפ ארוך'
   },
   {
     id: 'short', 

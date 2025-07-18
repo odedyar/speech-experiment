@@ -21,9 +21,62 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showRecordButton, setShowRecordButton] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const currentTriplet = state.triplets[state.currentIndex];
   const isLastInPhase = state.currentIndex === state.triplets.length - 1;
+
+  // פונקציה לבדיקת העלאה לגוגל דרייב
+  const testGoogleDriveUpload = async () => {
+    try {
+      setTestStatus('testing');
+      console.log('יוצר קובץ ZIP לבדיקה...');
+      
+      const zip = new JSZip();
+      
+      // יצירת נתונים דמה
+      const testData = `בדיקת העלאה לגוגל דרייב
+תאריך: ${new Date().toLocaleString('he-IL')}
+מספר משתתף: TEST_${Date.now()}
+סטטוס: בדיקה
+
+זהו קובץ בדיקה לוודא שהעלאה לגוגל דרייב עובדת נכון.
+`;
+      
+      zip.file('test-data.txt', testData);
+      
+      // הוספת קובץ אודיו דמה (silence)
+      const silenceBlob = new Blob([''], { type: 'audio/mpeg' });
+      zip.file('test-audio.mp3', silenceBlob);
+      
+      const zipBlob = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 6
+        }
+      });
+      
+      const testFileName = `test_upload_${Date.now()}.zip`;
+      
+      // העלאה לגוגל דרייב
+      console.log('מעלה קובץ בדיקה לגוגל דרייב...');
+      const uploadResult = await uploadToGoogleDrive(zipBlob, testFileName);
+      
+      if (uploadResult.success) {
+        setTestStatus('success');
+        console.log('בדיקת העלאה הצליחה!');
+      } else {
+        setTestStatus('error');
+        console.error('בדיקת העלאה נכשלה:', uploadResult.error);
+      }
+      
+    } catch (error) {
+      console.error('שגיאה בבדיקת העלאה:', error);
+      setTestStatus('error');
+    }
+  };
 
   const playTriplet = async () => {
     if (isPlaying) return;
@@ -165,9 +218,9 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       case 'speech-training':
         return [
           '1. לחץ על הכפתור "השמע צירוף צלילים" כדי לשמוע את הצלילים',
-          '2. שים לב לסדר הצלילים: פים ארוך או פיפ קצר',
+          '2. שים לב לסדר הצלילים: פיפ ארוך או פיפ קצר',
           '3. לחץ על "התחל הקלטה" כשאתה מוכן',
-          '4. אמור ברצף: "ארוך" עבור כל פים ארוך ו"קצר" עבור כל פיפ קצר',
+          '4. אמור ברצף: "ארוך" עבור כל פיפ ארוך ו"קצר" עבור כל פיפ קצר',
           '5. דוגמה: אם שמעת ארוך-קצר-קצר, אמור "ארוך קצר קצר"',
           '6. לחץ על "עצור הקלטה" כשסיימת'
         ];
@@ -218,71 +271,150 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
-  const downloadAllAsZip = async () => {
-    const zip = new JSZip();
-    
-    // הוספת כל ההקלטות לקובץ ZIP
-    for (const recording of state.recordings) {
-      zip.file(recording.filename, recording.blob);
+  // עדכון הפונקציה uploadToGoogleDrive
+  const uploadToGoogleDrive = async (zipBlob: Blob, fileName: string) => {
+    try {
+      console.log('מתחיל העלאה לגוגל דרייב...');
+      
+      // יצירת FormData
+      const formData = new FormData();
+      formData.append('file', zipBlob, fileName);
+      formData.append('filename', fileName);
+      
+      const res = await fetch("https://script.google.com/macros/s/AKfycbwyKKECoTYC18WoKyJiHHcT6XSY2_Igr55jtkHKL80SrZvPMpL3EAtIkpv6aI9fDLttOw/exec", {
+        method: "POST",
+        body: formData,
+        mode: 'cors'
+      });
+
+      const text = await res.text();
+      console.log("תשובת השרת:", text);
+      
+      // נסיון לפרסר JSON
+      try {
+        const result = JSON.parse(text);
+        return { success: result.success, response: result.message || text };
+      } catch {
+        return { success: text.includes('success'), response: text };
+      }
+    } catch (error) {
+      console.error('שגיאה בהעלאה לגוגל דרייב:', error);
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
-    
-    // יצירת קובץ מידע על המשתמש
-    const userInfoText = `פרטי משתתף:
-שם: ${userInfo.name}
-מזהה: ${userId}
-גיל: ${userInfo.age}
-מין: ${userInfo.gender || 'לא צוין'}
-תאריך הניסוי: ${new Date().toLocaleDateString('he-IL')}
-שעת הניסוי: ${new Date().toLocaleTimeString('he-IL')}
-כמות הקלטות: ${state.recordings.length}`;
-    
-    zip.file('user_info.txt', userInfoText);
-    
-    // יצירת קובץ ZIP והורדה
-    const content = await zip.generateAsync({type: 'blob'});
-    const url = URL.createObjectURL(content);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${userInfo.name}_${userId}_experiment.zip`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
+  const downloadAllAsZip = async () => {
+    try {
+      setUploadStatus('uploading');
+      console.log('יוצר קובץ ZIP...');
+      const zip = new JSZip();
+      
+      // הוספת פרטי המשתמש
+      const userInfoText = `פרטי משתתף:
+שם: ${userInfo.name}
+גיל: ${userInfo.age}
+מין: ${userInfo.gender}
+מספר משתתף: ${userId}
+תאריך: ${new Date().toLocaleString('he-IL')}
+
+תוצאות הניסוי:
+${state.recordings.map((r, i) => 
+  `${i + 1}. סוג: ${r.type}, צירוף: ${r.triplet}, גודל קובץ: ${r.blob.size} bytes`
+).join('\n')}
+`;
+      zip.file('experiment-data.txt', userInfoText);
+      
+      // הוספת כל ההקלטות
+      state.recordings.forEach((recording, index) => {
+        const fileName = `${recording.type}_${String(index + 1).padStart(2, '0')}_${recording.triplet}.mp3`;
+        zip.file(fileName, recording.blob);
+      });
+      
+      console.log('מתחיל יצירת ZIP...');
+      const zipBlob = await zip.generateAsync({ 
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+          level: 6
+        }
+      });
+      
+      const zipFileName = `speech_experiment_${userId}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
+      
+      // הורדה מקומית
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = zipFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // העלאה לגוגל דרייב
+      console.log('מעלה לגוגל דרייב...');
+      const uploadResult = await uploadToGoogleDrive(zipBlob, zipFileName);
+      
+      if (uploadResult.success) {
+        setUploadStatus('success');
+      } else {
+        setUploadStatus('error');
+      }
+      
+    } catch (error) {
+      console.error('שגיאה ביצירת ZIP:', error);
+      setUploadStatus('error');
+    }
+  };
+
+  // מסך הסיום
   if (state.phase === 'complete') {
     return (
       <div className="experiment-complete">
-        <h2>תודה רבה!</h2>
-        <p>הניסוי הסתיים בהצלחה</p>
         <div className="success-message">
-          <p>✅ הנתונים נשמרו בבטחה במערכת</p>
-          <p>תוכל להוריד את הקבצים לשמירה אישית</p>
+          <h2>🎉 כל הכבוד! סיימת את הניסוי בהצלחה</h2>
+          <p>תודה על השתתפותך בניסוי זיהוי וזמזום צלילים.</p>
+          <p>הנתונים נשמרו במערכת.</p>
         </div>
+
+        <div className="download-actions">
+          <button 
+            onClick={downloadAllAsZip} 
+            className="download-all-button"
+            disabled={uploadStatus === 'uploading'}
+          >
+            {uploadStatus === 'uploading' ? '⏳ מעלה לגוגל דרייב...' : '📁 הורד קובץ ZIP עם כל ההקלטות'}
+          </button>
+          
+          {uploadStatus === 'uploading' && (
+            <div className="upload-status uploading">
+              <p>🔄 יוצר קובץ ZIP ומעלה לגוגל דרייב...</p>
+              <div className="loading-spinner"></div>
+            </div>
+          )}
+          
+          {uploadStatus === 'success' && (
+            <div className="upload-status success">
+              <p>✅ הקובץ נשמר בהצלחה בגוגל דרייב ובמחשב שלך!</p>
+            </div>
+          )}
+          
+          {uploadStatus === 'error' && (
+            <div className="upload-status error">
+              <p>⚠️ הקובץ הורד למחשב, אך הייתה בעיה בשמירה בגוגל דרייב.</p>
+              <p>הנתונים שמורים במערכת ובקובץ ZIP שהורד.</p>
+            </div>
+          )}
+        </div>
+
         <div className="recordings-list">
-          <div className="download-actions">
-            <button 
-              onClick={downloadAllAsZip}
-              className="download-all-button"
-            >
-              📦 הורד הכל כקובץ ZIP
-            </button>
-          </div>
-          <h3>הקלטות פרטניות:</h3>
+          <h3>רשימת ההקלטות ({state.recordings.length}):</h3>
           {state.recordings.map((recording, index) => (
-            <div key={recording.id} className="recording-item">
-              <span>{recording.filename}</span>
-              <button 
-                onClick={() => {
-                  const url = URL.createObjectURL(recording.blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = recording.filename;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                className="download-button"
-              >
-                הורד
-              </button>
+            <div key={index} className="recording-item">
+              <span>
+                {recording.type === 'speech' ? 'זיהוי בדיבור' : 'זמזום'} - צעד {index + 1} - {recording.triplet}
+              </span>
+              <audio controls src={URL.createObjectURL(recording.blob)} />
             </div>
           ))}
         </div>
@@ -299,6 +431,43 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
         </p>
       </div>
       
+      {/* כפתור בדיקה - רק בתחילת הניסוי */}
+      {state.phase === 'speech-training' && state.currentIndex === 0 && (
+        <div className="test-section">
+          <h4>🧪 בדיקת מערכת</h4>
+          <p>לחץ כאן לבדוק שההעלאה לגוגל דרייב עובדת נכון:</p>
+          <button 
+            onClick={testGoogleDriveUpload}
+            className="test-button"
+            disabled={testStatus === 'testing'}
+          >
+            {testStatus === 'testing' ? '⏳ בודק העלאה...' : '🔧 בדוק העלאה לגוגל דרייב'}
+          </button>
+          
+          {testStatus === 'testing' && (
+            <div className="test-status testing">
+              <p>🔄 בודק העלאה לגוגל דרייב...</p>
+              <div className="loading-spinner"></div>
+            </div>
+          )}
+          
+          {testStatus === 'success' && (
+            <div className="test-status success">
+              <p>✅ בדיקת העלאה הצליחה! גוגל דרייב עובד נכון.</p>
+            </div>
+          )}
+          
+          {testStatus === 'error' && (
+            <div className="test-status error">
+              <p>❌ בדיקת העלאה נכשלה. יש בעיה בחיבור לגוגל דרייב.</p>
+              <p>בדוק את ה-Console לפרטים נוספים.</p>
+            </div>
+          )}
+          
+          <hr style={{margin: '20px 0'}} />
+        </div>
+      )}
+      
       <div className="instructions">
         <p>{getInstructions()}</p>
       </div>
@@ -311,15 +480,6 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           ))}
         </ol>
       </div>
-      
-      {/* Hiding triplet display as requested by user */}
-      {/* <div className="triplet-display">
-        <h3>צירוף הצלילים הנוכחי:</h3>
-        <div className="triplet-text">{currentTriplet}</div>
-        <div className="triplet-description">
-          ({getTripletDescription(currentTriplet)})
-        </div>
-      </div> */}
       
       <div className="audio-controls">
         <button 
