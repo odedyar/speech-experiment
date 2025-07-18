@@ -281,7 +281,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       formData.append('file', zipBlob, fileName);
       formData.append('filename', fileName);
       
-      const res = await fetch("https://script.google.com/macros/s/AKfycbwyKKECoTYC18WoKyJiHHcT6XSY2_Igr55jtkHKL80SrZvPMpL3EAtIkpv6aI9fDLttOw/exec", {
+      const res = await fetch("https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec", {
         method: "POST",
         body: formData,
         mode: 'cors'
