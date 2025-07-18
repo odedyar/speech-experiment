@@ -22,61 +22,9 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showRecordButton, setShowRecordButton] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
-  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
 
   const currentTriplet = state.triplets[state.currentIndex];
   const isLastInPhase = state.currentIndex === state.triplets.length - 1;
-
-  // פונקציה לבדיקת העלאה לגוגל דרייב
-  const testGoogleDriveUpload = async () => {
-    try {
-      setTestStatus('testing');
-      console.log('יוצר קובץ ZIP לבדיקה...');
-      
-      const zip = new JSZip();
-      
-      // יצירת נתונים דמה
-      const testData = `בדיקת העלאה לגוגל דרייב
-תאריך: ${new Date().toLocaleString('he-IL')}
-מספר משתתף: TEST_${Date.now()}
-סטטוס: בדיקה
-
-זהו קובץ בדיקה לוודא שהעלאה לגוגל דרייב עובדת נכון.
-`;
-      
-      zip.file('test-data.txt', testData);
-      
-      // הוספת קובץ אודיו דמה (silence)
-      const silenceBlob = new Blob([''], { type: 'audio/mpeg' });
-      zip.file('test-audio.mp3', silenceBlob);
-      
-      const zipBlob = await zip.generateAsync({ 
-        type: "blob",
-        compression: "DEFLATE",
-        compressionOptions: {
-          level: 6
-        }
-      });
-      
-      const testFileName = `test_upload_${Date.now()}.zip`;
-      
-      // העלאה לגוגל דרייב
-      console.log('מעלה קובץ בדיקה לגוגל דרייב...');
-      const uploadResult = await uploadToGoogleDrive(zipBlob, testFileName);
-      
-      if (uploadResult.success) {
-        setTestStatus('success');
-        console.log('בדיקת העלאה הצליחה!');
-      } else {
-        setTestStatus('error');
-        console.error('בדיקת העלאה נכשלה:', uploadResult.error);
-      }
-      
-    } catch (error) {
-      console.error('שגיאה בבדיקת העלאה:', error);
-      setTestStatus('error');
-    }
-  };
 
   const playTriplet = async () => {
     if (isPlaying) return;
@@ -111,10 +59,6 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
       utterance.onend = () => resolve();
       speechSynthesis.speak(utterance);
     });
-  };
-
-  const delay = (ms: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
   };
 
   const handleRecordingComplete = (blob: Blob) => {
@@ -271,62 +215,6 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
-  // החלפת הפונקציה uploadToGoogleDrive
-  const uploadToGoogleDrive = async (zipBlob: Blob, fileName: string) => {
-    try {
-      console.log('מתחיל העלאה לגוגל דרייב...');
-      
-      // בדיקה אם אנחנו בlocalhost
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('localhost detected - simulating upload');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return { success: true, response: 'Simulated upload success (localhost mode)' };
-      }
-      
-      // המרה לbase64 - זה עוקף את בעיית CORS
-      const base64Data = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = reader.result as string;
-          resolve(result.split(',')[1]); // הסרת הprefix
-        };
-        reader.readAsDataURL(zipBlob);
-      });
-      
-      console.log('Base64 data length:', base64Data.length);
-      
-      // יצירת form data עם base64
-      const formData = new FormData();
-      formData.append('fileData', base64Data);
-      formData.append('fileName', fileName);
-      formData.append('mimeType', 'application/zip');
-      
-      // שליחה לGoogle Apps Script
-      const res = await fetch("https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec", {
-        method: "POST",
-        body: formData
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const text = await res.text();
-      console.log("תשובת השרת:", text);
-      
-      // נסיון לפרסר JSON
-      try {
-        const result = JSON.parse(text);
-        return { success: result.success, response: result.message || text };
-      } catch {
-        return { success: text.includes('success'), response: text };
-      }
-    } catch (error) {
-      console.error('שגיאה בהעלאה לגוגל דרייב:', error);
-      return { success: false, error: error instanceof Error ? error.message : String(error) };
-    }
-  };
-
   const downloadAllAsZip = async () => {
     try {
       setUploadStatus('uploading');
@@ -365,7 +253,7 @@ ${state.recordings.map((r, i) =>
       
       const zipFileName = `speech_experiment_${userId}_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.zip`;
       
-      // הורדה מקומית
+      // הורדה מקומית בלבד
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
@@ -375,15 +263,7 @@ ${state.recordings.map((r, i) =>
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // העלאה לגוגל דרייב
-      console.log('מעלה לגוגל דרייב...');
-      const uploadResult = await uploadToGoogleDrive(zipBlob, zipFileName);
-      
-      if (uploadResult.success) {
-        setUploadStatus('success');
-      } else {
-        setUploadStatus('error');
-      }
+      setUploadStatus('success');
       
     } catch (error) {
       console.error('שגיאה ביצירת ZIP:', error);
@@ -407,26 +287,27 @@ ${state.recordings.map((r, i) =>
             className="download-all-button"
             disabled={uploadStatus === 'uploading'}
           >
-            {uploadStatus === 'uploading' ? '⏳ מעלה לגוגל דרייב...' : '📁 הורד קובץ ZIP עם כל ההקלטות'}
+            {uploadStatus === 'uploading' ? '⏳ יוצר קובץ ZIP...' : '📁 הורד קובץ ZIP עם כל ההקלטות'}
           </button>
           
           {uploadStatus === 'uploading' && (
             <div className="upload-status uploading">
-              <p>🔄 יוצר קובץ ZIP ומעלה לגוגל דרייב...</p>
+              <p>🔄 יוצר קובץ ZIP...</p>
               <div className="loading-spinner"></div>
             </div>
           )}
           
           {uploadStatus === 'success' && (
             <div className="upload-status success">
-              <p>✅ הקובץ נשמר בהצלחה בגוגל דרייב ובמחשב שלך!</p>
+              <p>✅ הקובץ הורד בהצלחה למחשב שלך!</p>
+              <p>הניסוי הושלם בהצלחה.</p>
             </div>
           )}
           
           {uploadStatus === 'error' && (
             <div className="upload-status error">
-              <p>⚠️ הקובץ הורד למחשב, אך הייתה בעיה בשמירה בגוגל דרייב.</p>
-              <p>הנתונים שמורים במערכת ובקובץ ZIP שהורד.</p>
+              <p>⚠️ הייתה בעיה ביצירת קובץ ZIP.</p>
+              <p>נסה שוב או פנה לתמיכה.</p>
             </div>
           )}
         </div>
@@ -454,43 +335,6 @@ ${state.recordings.map((r, i) =>
           {state.currentIndex + 1} / {state.triplets.length}
         </p>
       </div>
-      
-      {/* כפתור בדיקה - רק בתחילת הניסוי */}
-      {state.phase === 'speech-training' && state.currentIndex === 0 && (
-        <div className="test-section">
-          <h4>🧪 בדיקת מערכת</h4>
-          <p>לחץ כאן לבדוק שההעלאה לגוגל דרייב עובדת נכון:</p>
-          <button 
-            onClick={testGoogleDriveUpload}
-            className="test-button"
-            disabled={testStatus === 'testing'}
-          >
-            {testStatus === 'testing' ? '⏳ בודק העלאה...' : '🔧 בדוק העלאה לגוגל דרייב'}
-          </button>
-          
-          {testStatus === 'testing' && (
-            <div className="test-status testing">
-              <p>🔄 בודק העלאה לגוגל דרייב...</p>
-              <div className="loading-spinner"></div>
-            </div>
-          )}
-          
-          {testStatus === 'success' && (
-            <div className="test-status success">
-              <p>✅ בדיקת העלאה הצליחה! גוגל דרייב עובד נכון.</p>
-            </div>
-          )}
-          
-          {testStatus === 'error' && (
-            <div className="test-status error">
-              <p>❌ בדיקת העלאה נכשלה. יש בעיה בחיבור לגוגל דרייב.</p>
-              <p>בדוק את ה-Console לפרטים נוספים.</p>
-            </div>
-          )}
-          
-          <hr style={{margin: '20px 0'}} />
-        </div>
-      )}
       
       <div className="instructions">
         <p>{getInstructions()}</p>
