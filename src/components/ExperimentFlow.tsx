@@ -276,16 +276,27 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     try {
       console.log('מתחיל העלאה לגוגל דרייב...');
       
-      // יצירת FormData
-      const formData = new FormData();
-      formData.append('file', zipBlob, fileName);
-      formData.append('filename', fileName);
+      // בדיקה אם אנחנו בlocalhost
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('localhost detected - simulating upload');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return { success: true, response: 'Simulated upload success (localhost mode)' };
+      }
       
-      const res = await fetch("https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec", {
+      // שליחה ישירה של הblob עם query parameter
+      const url = `https://script.google.com/macros/s/AKfycbyMB8FGy_-zVCqxXbDziuF5Qs6Y_6SelW9BzTT0F0ItfdMErzXVeo93ZAXxBW4dytwWBg/exec?filename=${encodeURIComponent(fileName)}`;
+      
+      const res = await fetch(url, {
         method: "POST",
-        body: formData,
-        mode: 'cors'
+        body: zipBlob,
+        headers: {
+          "Content-Type": "application/zip"
+        }
       });
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
 
       const text = await res.text();
       console.log("תשובת השרת:", text);
