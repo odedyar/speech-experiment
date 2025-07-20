@@ -12,11 +12,12 @@ interface ExperimentFlowProps {
 }
 
 const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => {
+  // החזרת ה-state הראשוני לניסוי המלא
   const [state, setState] = useState<ExperimentState>({
     phase: 'speech-training',
     currentIndex: 0,
     recordings: [],
-    triplets: trainingTriplets
+    triplets: trainingTriplets // חזרה לכל האימון (LLS, SLS, LSL)
   });
 
   const [isPlaying, setIsPlaying] = useState(false);
@@ -61,46 +62,30 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     });
   };
 
-  const handleRecordingComplete = (blob: Blob) => {
-    const recording: Recording = {
-      id: `${userId}_${state.phase}_${Date.now()}`,
-      userId,
-      type: state.phase.includes('speech') ? 'speech' : 'hum',
-      triplet: currentTriplet,
-      blob,
-      filename: `${userId}_${state.phase.includes('speech') ? 'speech' : 'hum'}_t${String(state.currentIndex + 1).padStart(2, '0')}_${currentTriplet}.mp3`
-    };
-
-    setState(prev => ({
-      ...prev,
-      recordings: [...prev.recordings, recording]
-    }));
-
-    handleNext();
+  const delay = (ms: number): Promise<void> => {
+    return new Promise(resolve => setTimeout(resolve, ms));
   };
 
+  // החזרת handleNext לניסוי המלא
   const handleNext = () => {
     if (isLastInPhase) {
-      // מעבר לשלב הבא
       switch (state.phase) {
         case 'speech-training':
-          // הצגת הודעת מעבר
           alert('כל הכבוד! סיימת את שלב האימון לזיהוי בדיבור.\nעכשיו נתחיל את הניסוי האמיתי - תקבל עוד צירופי צלילים לזיהוי.');
           setState(prev => ({
             ...prev,
             phase: 'speech-experiment',
             currentIndex: 0,
-            triplets: getRandomTriplets(25) // 25 צעדים לניסוי
+            triplets: getRandomTriplets(25) // חזרה ל-25 צעדים
           }));
           break;
         case 'speech-experiment':
-          // הודעת מעבר לזמזום
           alert('מצוין! סיימת את שלב הזיהוי בדיבור.\nעכשיו נעבור לחלק הזמזום. במקום לומר "ארוך" ו"קצר", תצטרך לזמזם את הצלילים באורך המתאים.\nנתחיל באימון קצר.');
           setState(prev => ({
             ...prev,
             phase: 'hum-training',
             currentIndex: 0,
-            triplets: trainingTriplets
+            triplets: trainingTriplets // חזרה לכל האימון (LLS, SLS, LSL)
           }));
           break;
         case 'hum-training':
@@ -109,7 +94,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
             ...prev,
             phase: 'hum-experiment',
             currentIndex: 0,
-            triplets: getRandomTriplets(25) // 25 צעדים לניסוי
+            triplets: getRandomTriplets(25) // חזרה ל-25 צעדים
           }));
           break;
         case 'hum-experiment':
@@ -120,7 +105,6 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
               console.log('Experiment saved with ID:', experimentId);
             } catch (error) {
               console.error('Failed to save experiment:', error);
-              // המשך הניסוי גם אם השמירה נכשלה
             }
           }, 100);
           
@@ -131,13 +115,48 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
           break;
       }
     } else {
-      // מעבר לשלשה הבאה
       setState(prev => ({
         ...prev,
         currentIndex: prev.currentIndex + 1
       }));
     }
     setShowRecordButton(false);
+  };
+
+  // עדכון handleRecordingComplete עם שמות קבצים מפורטים
+  const handleRecordingComplete = (blob: Blob) => {
+    // קביעת קידומת לפי סוג השלב
+    let phasePrefix = '';
+    switch (state.phase) {
+      case 'speech-training':
+        phasePrefix = 'training_speech';
+        break;
+      case 'speech-experiment':
+        phasePrefix = 'experiment_speech';
+        break;
+      case 'hum-training':
+        phasePrefix = 'training_hum';
+        break;
+      case 'hum-experiment':
+        phasePrefix = 'experiment_hum';
+        break;
+    }
+
+    const recording: Recording = {
+      id: `${userId}_${state.phase}_${Date.now()}`,
+      userId,
+      type: state.phase.includes('speech') ? 'speech' : 'hum',
+      triplet: currentTriplet,
+      blob,
+      filename: `${userId}_${phasePrefix}_step${String(state.currentIndex + 1).padStart(2, '0')}_${currentTriplet}.mp3`
+    };
+
+    setState(prev => ({
+      ...prev,
+      recordings: [...prev.recordings, recording]
+    }));
+
+    handleNext();
   };
 
   const getPhaseTitle = () => {
@@ -215,6 +234,7 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
     }
   };
 
+  // עדכון downloadAllAsZip לניסוי המלא
   const downloadAllAsZip = async () => {
     try {
       setUploadStatus('uploading');
@@ -229,20 +249,38 @@ const ExperimentFlow: React.FC<ExperimentFlowProps> = ({ userInfo, userId }) => 
 מספר משתתף: ${userId}
 תאריך: ${new Date().toLocaleString('he-IL')}
 
-תוצאות הניסוי:
-${state.recordings.map((r, i) => 
-  `${i + 1}. סוג: ${r.type}, צירוף: ${r.triplet}, גודל קובץ: ${r.blob.size} bytes`
-).join('\n')}
+תוצאות הניסוי המלא:
+${state.recordings.map((r, i) => {
+  const phaseType = r.filename.includes('training') ? 'אימון' : 'ניסוי';
+  const actionType = r.filename.includes('speech') ? 'זיהוי בדיבור' : 'זמזום';
+  return `${i + 1}. ${phaseType} - ${actionType}: ${r.triplet} (${r.filename})`;
+}).join('\n')}
+
+סיכום:
+- אימון זיהוי בדיבור: ${state.recordings.filter(r => r.filename.includes('training_speech')).length} הקלטות
+- ניסוי זיהוי בדיבור: ${state.recordings.filter(r => r.filename.includes('experiment_speech')).length} הקלטות
+- אימון זמזום: ${state.recordings.filter(r => r.filename.includes('training_hum')).length} הקלטות
+- ניסוי זמזום: ${state.recordings.filter(r => r.filename.includes('experiment_hum')).length} הקלטות
+
+סך הכל: ${state.recordings.length} הקלטות
 `;
       zip.file('experiment-data.txt', userInfoText);
       
-      // הוספת כל ההקלטות
-      state.recordings.forEach((recording, index) => {
-        const fileName = `${recording.type}_${String(index + 1).padStart(2, '0')}_${recording.triplet}.mp3`;
-        zip.file(fileName, recording.blob);
+      // יצירת תיקיות מסודרות
+      const trainingFolder = zip.folder('01_Training_אימון');
+      const experimentFolder = zip.folder('02_Experiment_ניסוי');
+      
+      // הוספת כל ההקלטות לתיקיות המתאימות
+      state.recordings.forEach((recording) => {
+        const fileName = recording.filename;
+        
+        if (fileName.includes('training')) {
+          trainingFolder?.file(fileName, recording.blob);
+        } else if (fileName.includes('experiment')) {
+          experimentFolder?.file(fileName, recording.blob);
+        }
       });
       
-      console.log('מתחיל יצירת ZIP...');
       const zipBlob = await zip.generateAsync({ 
         type: "blob",
         compression: "DEFLATE",
@@ -271,13 +309,14 @@ ${state.recordings.map((r, i) =>
     }
   };
 
-  // מסך הסיום
+  // עדכון מסך הסיום לניסוי המלא
   if (state.phase === 'complete') {
     return (
       <div className="experiment-complete">
         <div className="success-message">
           <h2>🎉 כל הכבוד! סיימת את הניסוי בהצלחה</h2>
           <p>תודה על השתתפותך בניסוי זיהוי וזמזום צלילים.</p>
+          <p>הניסוי כלל {state.recordings.length} הקלטות במשך כ-20 דקות.</p>
           <p>הנתונים נשמרו במערכת.</p>
         </div>
 
@@ -289,13 +328,6 @@ ${state.recordings.map((r, i) =>
           >
             {uploadStatus === 'uploading' ? '⏳ יוצר קובץ ZIP...' : '📁 הורד קובץ ZIP עם כל ההקלטות'}
           </button>
-          
-          {uploadStatus === 'uploading' && (
-            <div className="upload-status uploading">
-              <p>🔄 יוצר קובץ ZIP...</p>
-              <div className="loading-spinner"></div>
-            </div>
-          )}
           
           {uploadStatus === 'success' && (
             <div className="upload-status success">
