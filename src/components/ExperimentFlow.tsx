@@ -3,6 +3,7 @@ import { UserInfo, ExperimentState, Recording } from '../types';
 import { trainingTriplets, getRandomTriplets, getTripletDescription } from '../data/triplets';
 import { playTripletSequence } from '../data/audioSystem';
 import AudioRecorder from './AudioRecorder';
+import MicrophoneCheck from './MicrophoneCheck';
 import JSZip from 'jszip';
 import { saveExperimentData } from '../services/dataService';
 
@@ -392,6 +393,22 @@ ${state.recordings.map((r, i) => {
         
         {showRecordButton && (
           <div className="recording-section">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <MicrophoneCheck />
+              <a
+                href="https://webcammictest.com/check-mic.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '14px',
+                  color: '#1976d2',
+                  textDecoration: 'underline',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                בדוק את המיקרופון באתר חיצוני
+              </a>
+            </div>
             <AudioRecorder 
               onRecordingComplete={handleRecordingComplete}
               maxDuration={10}
